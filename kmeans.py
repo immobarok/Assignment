@@ -1,72 +1,93 @@
 import random
 import matplotlib.pyplot as plt
 
-# Load the dataset into a 2D list named "Data"
-# Assuming you have loaded the dataset into the variable "g_data"
+def distance(point1, point2):
+    return sum((x - y) ** 2 for x, y in zip(point1, point2))
 
-# Set your student ID as seed
-student_id = 123456
-random.seed(student_id)
+def find_closest_center(data_point, centers):
+    min_distance = float('inf')
+    closest_center = None
 
-def calculate_distance(point1, point2):
-    return sum((a - b)**2 for a, b in zip(point1, point2))
+    for center in centers:
+        dist = distance(data_point, center)
+        if dist < min_distance:
+            min_distance = dist
+            closest_center = center
 
-def assign_to_clusters(Data, Centers):
-    Clusters = [[] for _ in Centers]
-    for S in Data:
-        min_dist = float('inf')
-        min_idx = -1
-        for i, C in enumerate(Centers):
-            dist = calculate_distance(S, C)
-            if dist < min_dist:
-                min_dist = dist
-                min_idx = i
-        Clusters[min_idx].append(S)
-    return Clusters
+    return closest_center
 
-def calculate_new_centers(Clusters):
-    return [[sum(col) / len(cluster) for col in zip(*cluster)] for cluster in Clusters]
+def k_means_clustering(K, data):
+    Centers = random.sample(data, K)  # Randomly select K different data points as initial centers
 
-def k_means_clustering(Data, K):
-    Centers = random.sample(Data, K)
-    
+    Clusters = [[] for _ in range(K)]  # Initialize K empty lists for the K centers
+
+    itr = 1
+    Shift = 0
+
     while True:
-        Clusters = assign_to_clusters(Data, Centers)
-        
-        new_centers = calculate_new_centers(Clusters)
-        
-        if new_centers == Centers:
-            break
-        
+        for data_point in data:
+            closest_center = find_closest_center(data_point, Centers)
+            index = Centers.index(closest_center)
+            Clusters[index].append(data_point)
+
+        new_centers = []
+        for i in range(K):
+            new_center = [sum(col) / len(col) for col in zip(*Clusters[i])]
+            new_centers.append(new_center)
+
+        # Calculate the shift in centers
+        Shift = sum(distance(old_center, new_center) for old_center, new_center in zip(Centers, new_centers))
+
         Centers = new_centers
-    
+
+        # Clear the Clusters for the next iteration
+        Clusters = [[] for _ in range(K)]
+
+        if itr > 1 and Shift < 50:
+            break
+
+        itr += 1
+
+    # Calculate the inertia
     inertia = 0
     for i in range(K):
-        for S in Clusters[i]:
-            inertia += sum((a - b)**2 for a, b in zip(S, Centers[i]))
-    
-    return Clusters, Centers, inertia
+        inertia += sum(distance(data_point, Centers[i]) ** 2 for data_point in Clusters[i])
+
+    return Centers, Clusters, inertia
+
+def plot_clusters(data, centers, clusters):
+    colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+
+    for i in range(len(clusters)):
+        cluster = clusters[i]
+        if len(cluster) > 0:
+            color = colors[i % len(colors)]
+            x, y = zip(*cluster)
+            plt.scatter(x, y, c=color, label=f'Cluster {i+1}')
+
+    x_centers, y_centers = zip(*centers)
+    plt.scatter(x_centers, y_centers, c='black', marker='X', s=100, label='Centers')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('K-means Clustering')
+    plt.legend()
+    plt.show()
+
+# Load the dataset from the text file
+file_path = '/content/jain_feats.txt'  # Replace 'path_to_your_text_file.txt' with the actual file path
+with open(file_path, 'r') as file:
+    g_data = [[float(num) for num in line.strip().split()] for line in file]
+
+# Example usage:
 
 K_values = [2, 4, 6, 7]
 
+inertias = []
+
 for K in K_values:
-    Clusters, Centers, inertia = k_means_clustering(Data, K)
-    
-    colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-    
-    for i, cluster in enumerate(Clusters):
-        x_vals = [point[0] for point in cluster]
-        y_vals = [point[1] for point in cluster]
-        plt.scatter(x_vals, y_vals, color=colors[i], label=f'Cluster {i+1}')
-    
-    center_x = [center[0] for center in Centers]
-    center_y = [center[1] for center in Centers]
-    plt.scatter(center_x, center_y, color='black', marker='x', label='Centers')
-    
-    plt.xlabel('Feature 1')
-    plt.ylabel('Feature 2')
-    plt.title(f'K-means Clustering (K={K})')
-    plt.legend()
-    plt.show()
-    
-    print(f'K = {K}, Inertia: {inertia}')
+    Centers, Clusters, inertia = k_means_clustering(K, g_data)
+    inertias.append(inertia)
+    plot_clusters(g_data, Centers, Clusters)
+
+print("K values:", K_values)
+print("Inertia values:", inertias)
