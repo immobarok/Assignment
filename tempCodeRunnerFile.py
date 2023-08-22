@@ -25,12 +25,8 @@ def closest_center(data_point, centers):
 
 
 # Step 1: Select K random data points as the initial centers of K clusters
-K_values = list(map(int, input("Enter multiple K values (separated by spaces): ").split()))
-Centers_list = []
-
-for K in K_values:
-    Centers = random.sample(Data, K)
-    Centers_list.append(Centers)
+K = 4
+Centers = random.sample(Data, K)
 
 # List to store cluster assignments
 ClusterAssignments = [0] * len(Data)
@@ -81,29 +77,9 @@ for i, center in enumerate(Centers):
     plt.scatter(
         center[0], center[1], c="black", marker="x", s=100, label=f"Center {i+1}"
     )
-    sum_squared_distances = []
 
-# Loop over different K values to find the optimal number of clusters
-for k in range(1, 11):
-    Centers = random.sample(Data, k)
-    ClusterAssignments = [0] * len(Data)
-
-    # ... (K-means clustering steps)
-
-    # Calculate the sum of squared distances for the current K value
-    sum_squared = 0
-    for i, center in enumerate(Centers):
-        cluster_points = [Data[j] for j in range(len(Data)) if ClusterAssignments[j] == i]
-        for point in cluster_points:
-            sum_squared += distance(point, center) ** 2
-    sum_squared_distances.append(sum_squared)
 plt.legend()
 plt.xlabel("X")
 plt.ylabel("Y")
 plt.title("K-means Clustering")
-plt.show()
-plt.plot(range(1, 11), sum_squared_distances, marker='o')
-plt.xlabel('Number of Clusters (K)')
-plt.ylabel('Sum of Squared Distances')
-plt.title('Elbow Method for Optimal K')
 plt.show()
